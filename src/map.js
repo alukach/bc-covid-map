@@ -1,19 +1,15 @@
 import mapboxgl from "mapbox-gl";
-import XLSX from "xlsx";
+import { colors } from "./data";
 
-export function setupMap({ config, data }) {
+export function setupMap({ config, dataset, rows, dataValueField }) {
   mapboxgl.accessToken = config.mapboxAccessToken;
 
   const source = "local-health-area";
   const sourceLayer = "LHA_2018-b1d2l2";
 
-  const dataset = "LHA"; // HA, CHSA, LHA
-  const rows = XLSX.utils.sheet_to_json(data.Sheets[dataset]);
-  const dataValueField = "C_ADR_7day";
-
   const map = new mapboxgl.Map({
     container: "map",
-    style: "mapbox://styles/mapbox/streets-v9",
+    style: "mapbox://styles/mapbox/light-v10",
     hash: true,
     minZoom: 6,
     maxZoom: 12,
@@ -22,54 +18,59 @@ export function setupMap({ config, data }) {
   window.map = map;
 
   map.on("load", () => {
+    const layerIdField = `${dataset}_CD`;
+    const dataIdField = `${dataset}18_Code`;
+
     map.addSource("local-health-area", {
       type: "vector",
       url: `mapbox://${config.boundariesTileset}`,
-      promoteId: `${dataset}_CD`,
+      promoteId: layerIdField,
     });
 
-    // We determine the color for each polygon and then encode that information
-    // into a matchExpression that looks up the polygon by its ID
-    // https://docs.mapbox.com/mapbox-gl-js/example/data-join/
-    const layerIdField = `${dataset}_CD`;
-    const dataIdField = `${dataset}18_Code`;
-    const matchExpression = ["match", ["get", layerIdField]];
-    rows.forEach((row) =>
-      matchExpression.push(
-        `${row[dataIdField]}`,
-        getColor(
-          [
-            // Avg daily rate
-            [0, "rgb(255, 255, 255)"],
-            [0.1, "rgb(226, 214, 240)"],
-            [15.1, "rgb(187, 164, 204)"],
-            [30.1, "rgb(151, 121, 170)"],
-            [45.1, "rgb(101, 72, 125)"],
-            [60, "rgb(101, 72, 125)"],
-          ],
-          row[dataValueField]
-        )
-      )
-    );
-    matchExpression.push("rgb(175,175,175)");
     map.addLayer(
       {
-        id: "area",
+        id: "areas",
         type: "fill",
         source,
         "source-layer": sourceLayer,
         paint: {
-          "fill-color": matchExpression,
-          "fill-outline-color": "#fff",
+          // We determine the color for each polygon and then encode that information
+          // into a matchExpression that looks up the polygon by its ID
+          // https://docs.mapbox.com/mapbox-gl-js/example/data-join/
+          "fill-color": rows
+            .reduce(
+              (prev, row) => [
+                ...prev,
+                `${row[dataIdField]}`,
+                getColor(colors[dataValueField], row[dataValueField]),
+              ],
+              ["match", ["get", layerIdField]]
+            )
+            .concat("rgb(175,175,175)"), // nodata value
         },
       },
-      // Find the index of the first line layer in the map style.
+      // Place below lines
       // https://docs.mapbox.com/mapbox-gl-js/example/geojson-layer-in-stack/
       map.getStyle().layers.find((layer) => layer.type === "line").id
     );
 
+    map.addLayer(
+      {
+        id: "area-borders",
+        type: "line",
+        source,
+        "source-layer": sourceLayer,
+        paint: {
+          "line-color": "#666",
+          "line-width": 1.5,
+        },
+      },
+      // Place below symbols
+      map.getStyle().layers.find((layer) => layer.type === "symbol").id
+    );
+
     map.addLayer({
-      id: "label",
+      id: "labels",
       type: "symbol",
       source,
       "source-layer": sourceLayer,
@@ -85,7 +86,6 @@ export function setupMap({ config, data }) {
     // location of the feature, with description HTML from its properties.
     map.on("click", "area", (e) => {
       const [{ properties }] = e.features;
-      console.log(properties);
 
       new mapboxgl.Popup()
         .setLngLat(e.lngLat)
