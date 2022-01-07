@@ -2,8 +2,6 @@ import mapboxgl from "mapbox-gl";
 import { colors } from "./data";
 
 export function setupMap({ config, dataset, rows, dataValueField }) {
-  mapboxgl.accessToken = config.mapboxAccessToken;
-
   const source = "local-health-area";
   const sourceLayer = "LHA_2018-b1d2l2";
 
@@ -13,6 +11,8 @@ export function setupMap({ config, dataset, rows, dataValueField }) {
     hash: true,
     minZoom: 6,
     maxZoom: 12,
+    accessToken: config.mapboxAccessToken,
+    center: [-121.75, 51.5],
   });
 
   window.map = map;
