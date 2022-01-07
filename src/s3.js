@@ -1,4 +1,4 @@
-import S3 from "aws-sdk/clients/S3";
+const S3 = require("aws-sdk/clients/S3");
 
 export async function getLastObjectUrl({ bucket, region = "us-east-2", prefix }) {
   // TODO: Handle pagination.  Will only return 1000th object currently
