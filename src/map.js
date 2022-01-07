@@ -73,10 +73,6 @@ export function setupMap({ config, data }) {
       type: "symbol",
       source,
       "source-layer": sourceLayer,
-      layout: {
-        "text-field": `{${dataset}_Name}`,
-        "text-size": 20,
-      },
       paint: {
         "text-color": "#000",
         "text-halo-color": "#ddd",
