@@ -1,0 +1,15 @@
+{
+  "source": "src/index.html",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build"
+  },
+  "devDependencies": {
+    "parcel": "latest"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1052.0",
+    "mapbox-gl": "^2.6.1",
+    "xlsx": "^0.17.4"
+  }
+}
