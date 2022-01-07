@@ -19,7 +19,7 @@ jobs:
         run: yarn install
 
       - name: Build
-        run: yarn build
+        run: yarn build --public-url '/bc-covid-map'
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
