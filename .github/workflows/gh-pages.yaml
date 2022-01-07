@@ -12,8 +12,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       
-      - name: Load cache
-        uses: c-hive/gha-yarn-cache@v2
+      # - name: Load cache
+      #   uses: c-hive/gha-yarn-cache@v2
 
       - name: Read .nvmrc
         run: echo ::set-output name=NVMRC::$(cat .nvmrc)
