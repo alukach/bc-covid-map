@@ -9,11 +9,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Load cache
-        uses: c-hive/gha-yarn-cache@v2
-      
       - name: Checkout code
         uses: actions/checkout@v2
+      
+      - name: Load cache
+        uses: c-hive/gha-yarn-cache@v2
 
       - name: Install dependencies
         run: yarn install
