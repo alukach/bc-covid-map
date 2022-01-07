@@ -19,7 +19,7 @@ jobs:
         run: yarn install
 
       - name: Build
-        run: yarn build --public-url '${{ github.event.repository.name }}'
+        run: yarn build --public-url '/${{ github.event.repository.name }}'
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
