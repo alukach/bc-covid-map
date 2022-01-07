@@ -15,6 +15,15 @@ jobs:
       - name: Load cache
         uses: c-hive/gha-yarn-cache@v2
 
+      - name: Read .nvmrc
+        run: echo ::set-output name=NVMRC::$(cat .nvmrc)
+        id: nvm
+
+      - name: Use Node.js ${{ steps.nvm.outputs.NVMRC }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ steps.nvm.outputs.NVMRC }}
+
       - name: Install dependencies
         run: yarn install
 
