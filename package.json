@@ -2,7 +2,8 @@
   "source": "src/index.html",
   "scripts": {
     "start": "parcel",
-    "build": "parcel build"
+    "build": "parcel build",
+    "fetch-data": "node script/download-data.js"
   },
   "devDependencies": {
     "parcel": "latest"

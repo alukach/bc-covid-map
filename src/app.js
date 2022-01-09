@@ -1,28 +1,21 @@
-import XLSX from "xlsx";
 import config from "./config";
-import { setupMap } from "./map";
-import { colors, labels } from "./data";
-import { getLastObjectUrl } from "./s3";
+import { setupMap, colors, labels } from "./map";
+
+import LHA from "./data/LHA.json";
+import HA from "./data/HA.json";
+import CHSA from "./data/CHSA.json";
+
+const data = {
+  LHA, HA, CHSA
+};
 
 async function build() {
-  const s3Url = await getLastObjectUrl({
-    bucket: "data.opencovid.ca",
-    prefix: "archive/bc/case-testing-vaccine-summary-by-CHSA-and-LHA",
-    region: "us-east-2",
-  });
-
-  const res = await fetch(s3Url);
-  if (!res.ok) throw new Error("fetch failed");
-
-  const workbook = XLSX.read(new Uint8Array(await res.arrayBuffer()), {
-    type: "array",
-  });
-
   const dataset = "LHA"; // HA, CHSA, LHA
-  const rows = XLSX.utils.sheet_to_json(workbook.Sheets[dataset]);
   const dataValueField = "C_ADR_7day";
 
-  await setupMap({ config, dataset, rows, dataValueField });
+  console.log({ data });
+
+  await setupMap({ config, dataset, data: data[dataset], dataValueField });
 
   buildLegend({ parent: document.getElementById("legend"), dataValueField });
 }
