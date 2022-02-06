@@ -6,7 +6,8 @@
     "fetch-data": "node script/download-data.js"
   },
   "devDependencies": {
-    "parcel": "latest"
+    "@parcel/transformer-sass": "^2.1.1",
+    "parcel": "^2.2.1"
   },
   "dependencies": {
     "aws-sdk": "^2.1053.0",
