@@ -1,6 +1,14 @@
 import mapboxgl from "mapbox-gl";
 
 export const colors = {
+  // CUMULATIVE Colors
+  // Rate per 100k population by LHA
+  // 0, rgba(255,255,255),
+  // 0.1, rgba(201,210,230),
+  // 1500.1, rgba(139,170,204),
+  // 3000.1, rgba(92, 140, 183),
+  // 4500.1, rgba(58, 97, 133),
+  // 6000, rgba(35, 61, 86)
   C_ADR_7day: [
     // Avg daily rate
     [0, "rgb(255, 255, 255)"],
@@ -60,12 +68,22 @@ export function setupMap({ config, dataset, data, dataValueField }) {
     accessToken: config.mapboxAccessToken,
     center: [-121.75, 51.5],
   });
+  const overlay = document.getElementById("features");
 
+  // For debugging...
   window.map = map;
 
+  const layerIdField = `${dataset}_CD`;
+  const dataIdField = `${dataset}18_Code`;
+  const dataIndex = Object.assign(
+    {},
+    ...data.map((row) => ({ [row[dataIdField].toString()]: row }))
+  );
+
   map.on("load", () => {
-    const layerIdField = `${dataset}_CD`;
-    const dataIdField = `${dataset}18_Code`;
+    ["road-motorway-trunk", "road-primary"].forEach((layer) => {
+      map.setPaintProperty(layer, "line-color", "hsl(156, 12%, 10%)");
+    });
 
     map.addSource("local-health-area", {
       type: "vector",
@@ -107,50 +125,92 @@ export function setupMap({ config, dataset, data, dataValueField }) {
         source,
         "source-layer": sourceLayer,
         paint: {
-          "line-color": "#666",
-          "line-width": 1.5,
+          "line-color": "#fff",
+          "line-width": [
+            "interpolate",
+            ["exponential", 1.5],
+            ["zoom"],
+            1,
+            2,
+            6,
+            1.25,
+          ], // TODO: When zoom == 6, line width 1.5
         },
       },
       // Place below symbols
       map.getStyle().layers.find((layer) => layer.type === "symbol").id
     );
 
-    map.addLayer({
-      id: "labels",
-      type: "symbol",
-      source,
-      "source-layer": sourceLayer,
-      paint: {
-        "text-color": "#000",
-        "text-halo-color": "#ddd",
-        "text-halo-width": 1.5,
-        "text-halo-blur": 0.5,
+    map.addLayer(
+      {
+        id: "area-highlighted",
+        type: "fill",
+        source,
+        "source-layer": sourceLayer,
+        paint: {
+          "fill-outline-color": "#484896",
+          "fill-color": "#6e599f",
+          "fill-opacity": 0.75,
+        },
+        // Display none by adding a
+        // filter with an empty string.
+        filter: ["in", layerIdField, ""],
       },
-    });
+      // Place below symbols
+      map.getStyle().layers.find((layer) => layer.type === "symbol").id
+    );
 
-    // When a click event occurs on a feature in the local-health-area layer, open a popup at the
-    // location of the feature, with description HTML from its properties.
-    map.on("click", "area", (e) => {
+    map.on("mousemove", "areas", (e) => {
+      map.getCanvas().style.cursor = "pointer";
+
       const [{ properties }] = e.features;
 
-      new mapboxgl.Popup()
-        .setLngLat(e.lngLat)
-        .setHTML(
-          `<h3>${properties.LHA_Name}</h3>` +
-            "<table>" +
-            Object.entries({
-              "Local Health Area": "LHA_Name",
-              "Health Authority": "HA_Name",
-              Population: "LHA_Pop16",
-            })
-              .map(
-                ([label, prop]) =>
-                  `<tr><th>${label}</th><td>${properties[prop]}</td></tr>`
-              )
-              .join("") +
-            "</table>"
-        )
-        .addTo(map);
+      const recordId = properties[layerIdField];
+      const record = dataIndex[recordId];
+      const dataLabel = labels[dataValueField];
+      const dataValue = record[dataValueField];
+      const total = Math.round((dataValue / 100000) * properties.LHA_Pop16);
+
+      const title = document.createElement("div");
+      title.innerHTML =
+        `<h3>${properties.LHA_Name}</h3>` +
+        "<dl>" +
+        `<dt>${dataLabel}</dt>` +
+        `<dd>${dataValue}</dd>` +
+        "<dt>Approx. total cases*</dt>" +
+        `<dd>${total} (1 in ${numberWithCommas(
+          Math.round(properties.LHA_Pop16 / dataValue)
+        )})</dd>` +
+        Object.entries({
+          "Local Health Area": "LHA_Name",
+          "Health Authority": "HA_Name",
+          Population: "LHA_Pop16",
+        })
+          .map(
+            ([label, prop]) =>
+              `<dt>${label}</dt><dd>${
+                Number.isInteger(properties[prop])
+                  ? numberWithCommas(properties[prop])
+                  : properties[prop]
+              }</dd>`
+          )
+          .join("") +
+        "</dl>";
+
+      overlay.innerHTML = "";
+      overlay.style.display = "block";
+
+      overlay.appendChild(title);
+
+      map.setFilter("area-highlighted", [
+        "in",
+        layerIdField,
+        properties[layerIdField],
+      ]);
+    });
+
+    map.on("mouseleave", "areas", (e) => {
+      map.getCanvas().style.cursor = "";
     });
 
     // Change the cursor to a pointer when the mouse is over the local-health-area layer.
@@ -162,15 +222,6 @@ export function setupMap({ config, dataset, data, dataValueField }) {
     map.on("mouseleave", "local-health-area", () => {
       map.getCanvas().style.cursor = "";
     });
-
-    // CUMULATIVE Colors
-    // Rate per 100k population by LHA
-    // 0, rgba(255,255,255),
-    // 0.1, rgba(201,210,230),
-    // 1500.1, rgba(139,170,204),
-    // 3000.1, rgba(92, 140, 183),
-    // 4500.1, rgba(58, 97, 133),
-    // 6000, rgba(35, 61, 86)
   });
 }
 
@@ -183,4 +234,8 @@ function getColor(levels, value) {
     const [upper] = levels[Number(i) + 1];
     if (lower <= value && value < upper) return color;
   }
+}
+
+function numberWithCommas(x) {
+  return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }

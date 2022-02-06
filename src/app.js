@@ -13,8 +13,6 @@ async function build() {
   const dataset = "LHA"; // HA, CHSA, LHA
   const dataValueField = "C_ADR_7day";
 
-  console.log({ data });
-
   await setupMap({ config, dataset, data: data[dataset], dataValueField });
 
   buildLegend({ parent: document.getElementById("legend"), dataValueField });
