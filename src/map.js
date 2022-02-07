@@ -81,9 +81,34 @@ export function setupMap({ config, dataset, data, dataValueField }) {
   );
 
   map.on("load", () => {
+
+    // Customize map style
     ["road-motorway-trunk", "road-primary"].forEach((layer) => {
-      map.setPaintProperty(layer, "line-color", "hsl(156, 12%, 10%)");
+      // Hide outlines of major roads
+      map.setPaintProperty(`${layer}-case`, "line-width", [
+        "interpolate",
+        ["exponential", 1.5],
+        ["zoom"],
+        6,
+        0,
+        12,
+        1,
+      ]);
+
+      // Thinner major roads
+      map.setPaintProperty(layer, "line-width", [
+        "interpolate",
+        ["exponential", 1.5],
+        ["zoom"],
+        6,
+        0.5,
+        9,
+        1,
+        12,
+        2,
+      ]);
     });
+    // TODO: Make labels stand out a bit more
 
     map.addSource("local-health-area", {
       type: "vector",
@@ -130,11 +155,11 @@ export function setupMap({ config, dataset, data, dataValueField }) {
             "interpolate",
             ["exponential", 1.5],
             ["zoom"],
-            1,
-            2,
             6,
             1.25,
-          ], // TODO: When zoom == 6, line width 1.5
+            10,
+            5,
+          ],
         },
       },
       // Place below symbols
